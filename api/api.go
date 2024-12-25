@@ -22,9 +22,9 @@ func (api *Api) SetupRoutes() {
 	api.mux.HandleFunc("POST /logout", api.handler.LogoutHandler)
 	api.mux.HandleFunc("POST /refresh", api.handler.RefreshHandler)
 
-	api.mux.HandleFunc("POST /users", api.handler.CreateUserHandler)
-	api.mux.HandleFunc("GET /users", api.handler.GetUsersHandler)
-	api.mux.HandleFunc("GET /users/{id}", api.handler.GetUserByIDHandler)
+	api.mux.HandleFunc("POST /users", middleware.Auth(api.handler.CreateUserHandler))
+	api.mux.HandleFunc("GET /users", middleware.Auth(api.handler.GetUsersHandler))
+	api.mux.HandleFunc("GET /users/{id}", middleware.Auth(api.handler.GetUserByIDHandler))
 
 	api.mux.HandleFunc("GET /usage", middleware.Auth(api.handler.GetUsageHandler))
 

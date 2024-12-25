@@ -13,6 +13,11 @@ import (
 )
 
 func (h *Handler) CreateUserHandler(w http.ResponseWriter, r *http.Request) {
+	role := r.Header.Get("X-User-ROLE")
+	if models.Role(role) != models.Admin {
+		utils.ErrorResponse(w, http.StatusUnauthorized, "Not your level request")
+		return
+	}
 	var user models.User
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
 		utils.ErrorResponse(w, http.StatusBadRequest, "Invalid request body")
@@ -45,6 +50,11 @@ func (h *Handler) CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) GetUsersHandler(w http.ResponseWriter, r *http.Request) {
+	role := r.Header.Get("X-User-ROLE")
+	if models.Role(role) != models.Admin {
+		utils.ErrorResponse(w, http.StatusUnauthorized, "Not your level request")
+		return
+	}
 	users, err := h.storage.GetUsers()
 	if err != nil {
 		utils.ErrorResponse(w, http.StatusInternalServerError, "Failed to fetch users")
@@ -64,10 +74,30 @@ func (h *Handler) GetUsersHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) GetUserByIDHandler(w http.ResponseWriter, r *http.Request) {
+	role := r.Header.Get("X-User-ROLE")
+	if role == "" {
+		utils.ErrorResponse(w, http.StatusUnauthorized, "Role not found in request")
+		return
+	}
+
+	tokenUserID := r.Header.Get("X-User-ID")
+	token_sub, err := strconv.Atoi(tokenUserID)
+	if err != nil {
+		utils.ErrorResponse(w, http.StatusBadRequest, "Invalid user ID")
+		return
+	}
+
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		utils.ErrorResponse(w, http.StatusBadRequest, "Invalid user ID")
 		return
+	}
+
+	if models.Role(role) != models.Admin {
+		if token_sub != id {
+			utils.ErrorResponse(w, http.StatusUnauthorized, "Not your level request")
+			return
+		}
 	}
 
 	user, err := h.storage.GetUserById(id)
